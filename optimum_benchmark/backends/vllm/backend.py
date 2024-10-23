@@ -53,13 +53,14 @@ class VLLMBackend(Backend[VLLMConfig]):
         self.generation_config.eos_token_id = None
         self.generation_config.pad_token_id = None
 
-        model_cache_folder = f"models/{self.config.model}".replace("/", "--")
-        model_cache_path = f"{HUGGINGFACE_HUB_CACHE}/{model_cache_folder}"
-        snapshot_file = f"{model_cache_path}/refs/{self.config.model_kwargs.get('revision', 'main')}"
-        snapshot_ref = open(snapshot_file, "r").read().strip()
-        model_snapshot_path = f"{model_cache_path}/snapshots/{snapshot_ref}"
-        self.logger.info("\t+ Saving new pretrained generation config")
-        self.generation_config.save_pretrained(save_directory=model_snapshot_path)
+        # model_cache_folder = f"models/{self.config.model}".replace("/", "--")
+        # model_cache_path = f"{HUGGINGFACE_HUB_CACHE}/{model_cache_folder}"
+        # snapshot_file = f"{model_cache_path}/refs/{self.config.model_kwargs.get('revision', 'main')}"
+        # print(f"snapshot_file: {snapshot_file}")
+        # snapshot_ref = open(snapshot_file, "r").read().strip()
+        # model_snapshot_path = f"{model_cache_path}/snapshots/{snapshot_ref}"
+        # self.logger.info("\t+ Saving new pretrained generation config")
+        # self.generation_config.save_pretrained(save_directory=model_snapshot_path)
 
     def create_no_weights_model(self) -> None:
         self.no_weights_model = os.path.join(self.tmpdir.name, "no_weights_model")
@@ -124,7 +125,7 @@ class VLLMBackend(Backend[VLLMConfig]):
                     n=kwargs.get("num_return_sequences"),
                     max_tokens=kwargs.get("max_new_tokens"),
                     min_tokens=kwargs.get("min_new_tokens"),
-                    use_beam_search=kwargs.get("num_beams") > 1,
+                    # use_beam_search=kwargs.get("num_beams") > 1,
                     logits_processors=kwargs.get("logits_processors", None),
                 ),
             )
