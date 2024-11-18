@@ -7,6 +7,8 @@ import torch
 from huggingface_hub.constants import HUGGINGFACE_HUB_CACHE
 from safetensors.torch import save_file
 from vllm import AsyncEngineArgs, AsyncLLMEngine, EngineArgs, LLMEngine, SamplingParams
+from vllm.assets.image import ImageAsset
+from vllm.assets.audio import AudioAsset
 
 from ...task_utils import TEXT_GENERATION_TASKS
 from ..base import Backend
@@ -35,7 +37,7 @@ class VLLMBackend(Backend[VLLMConfig]):
             self.load_model_with_no_weights()
         else:
             self.logger.info("\t+ Downloading pretrained model")
-            self.download_pretrained_model()
+            # self.download_pretrained_model()
             if self.config.task in TEXT_GENERATION_TASKS:
                 self.logger.info("\t+ Preparing generation config")
                 self.prepare_generation_config()
@@ -115,6 +117,20 @@ class VLLMBackend(Backend[VLLMConfig]):
 
     def batch_offline_engine_generate(self, inputs: Dict[str, Any], kwargs: Dict[str, Any]) -> Any:
         for i, prompt in enumerate(inputs["prompts"]):
+            if self.config.include_audio:
+                prompt = {
+                    "prompt": f"<|reserved_special_token_0|>{prompt}",
+                    "multi_modal_data": {
+                        "audio": [AudioAsset("mary_had_lamb").audio_and_sample_rate]
+                    },
+                }
+            if self.config.include_image:
+                prompt = {
+                    "prompt": f"<|user|>\n<|image_1|>\n{prompt}<|end|>\n<|assistant|>\n",
+                    "multi_modal_data": {
+                        "image": ImageAsset("cherry_blossom").pil_image
+                    },
+                }
             self.pretrained_model.add_request(
                 inputs=prompt,
                 request_id=str(i),
@@ -134,6 +150,20 @@ class VLLMBackend(Backend[VLLMConfig]):
             self.pretrained_model.step()
 
     async def single_online_engine_generate(self, prompt: str, request_id: str, kwargs: Dict[str, Any]) -> Any:
+        if self.config.include_audio:
+            prompt = {
+                "prompt": f"<|reserved_special_token_0|>{prompt}",
+                "multi_modal_data": {
+                    "audio": [AudioAsset("mary_had_lamb").audio_and_sample_rate]
+                },
+            }
+        if self.config.include_image:
+            prompt = {
+                "prompt": f"<|user|>\n<|image_1|>\n{prompt}<|end|>\n<|assistant|>\n",
+                "multi_modal_data": {
+                    "image": ImageAsset("cherry_blossom").pil_image
+                },
+            }
         stream = await self.pretrained_model.add_request(
             inputs=prompt,
             request_id=request_id,
